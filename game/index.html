@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="theme-color" content="#111b25">
+  <title>EMBER YARD — Tactical FPS</title>
+  <style>
+    :root{color-scheme:dark;--ember:#ff7a26;--teal:#2fd4c4;--deep:#111b25;--panel:rgba(12,21,29,.88);--white:#e7eff1;--muted:#91a2ae}
+    *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--deep);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--white);user-select:none}
+    #yard-canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+    .hud{position:fixed;inset:0;pointer-events:none;text-shadow:0 2px 6px #000b}
+    .topbar{position:absolute;top:0;left:0;right:0;height:92px;padding:22px 4vw;display:flex;align-items:flex-start;justify-content:space-between;background:linear-gradient(#07111bd9,transparent)}
+    .brand{font-weight:900;letter-spacing:.18em;font-size:16px}.brand i{font-style:normal;color:var(--ember)}.mapname{color:var(--muted);font-size:10px;letter-spacing:.2em;margin-top:5px}
+    .score{display:flex;align-items:center;gap:15px;font-weight:800;letter-spacing:.08em;font-size:20px}.score .ember{color:var(--ember)}.score .harbor{color:var(--teal)}.score small{color:#d7e0e2;font-weight:500;font-size:11px;letter-spacing:.17em}
+    .clock{text-align:right;min-width:120px}.clock strong{font:700 25px/1 ui-monospace,monospace;letter-spacing:.08em}.clock small{display:block;color:var(--muted);font-size:9px;letter-spacing:.2em;margin-top:6px}
+    #phase-label{position:absolute;top:105px;left:50%;transform:translateX(-50%);font-size:10px;letter-spacing:.25em;color:var(--ember);font-weight:800}
+    .round{position:absolute;left:4vw;top:105px;color:#cfdae0;font:11px ui-monospace,monospace;letter-spacing:.13em}
+    .alive{position:absolute;right:4vw;top:105px;display:flex;gap:10px;font:10px ui-monospace,monospace;color:#c5d0d5}.alive span:first-child{color:var(--ember)}.alive span:last-child{color:var(--teal)}
+    .bottom{position:absolute;left:4vw;right:4vw;bottom:28px;display:flex;align-items:flex-end;justify-content:space-between}
+    .vitals{width:205px}.vital-label{display:flex;justify-content:space-between;font:10px ui-monospace,monospace;letter-spacing:.14em;margin:7px 0 4px;color:#d4dfe3}.bar{height:5px;background:#17242d;border:1px solid #71808a40}.bar i{display:block;height:100%;background:var(--ember);transition:width .12s}.bar.armor i{background:var(--teal)}
+    .help{margin-top:11px;color:#9eabb0;font-size:9px;letter-spacing:.1em;line-height:1.75}.help b{color:#e0e7e8}
+    .ammo{text-align:right;min-width:180px}.weapon-name{font-size:11px;letter-spacing:.2em;color:#d6e0e4;text-transform:uppercase;margin-bottom:3px}.ammo-read{font:800 36px/1 ui-monospace,monospace;color:white}.ammo-read small{font-size:16px;color:#95a5ad;font-weight:500}
+    .money{margin-top:8px;color:var(--ember);font:700 13px ui-monospace,monospace;letter-spacing:.1em}
+    #crosshair{position:absolute;left:50%;top:50%;width:2px;height:2px;transform:translate(-50%,-50%);color:white;filter:drop-shadow(0 1px 2px #000)}
+    #crosshair i{position:absolute;display:block;background:currentColor;border-radius:1px;transition:all .06s}
+    #crosshair .up{width:2px;height:7px;left:0;bottom:calc(100% + var(--spread,4px))}#crosshair .down{width:2px;height:7px;left:0;top:calc(100% + var(--spread,4px))}
+    #crosshair .left{height:2px;width:7px;right:calc(100% + var(--spread,4px));top:0}#crosshair .right{height:2px;width:7px;left:calc(100% + var(--spread,4px));top:0}
+    #crosshair.hit{color:var(--ember)}#damage-indicator{position:absolute;inset:0;border:4px solid #ef4a4566;box-shadow:inset 0 0 75px #ff282933;opacity:0;pointer-events:none}
+    #killfeed{position:absolute;top:142px;right:4vw;display:flex;flex-direction:column;gap:5px;align-items:flex-end}.feed-item{background:#101b22c9;padding:7px 10px;font-size:10px;letter-spacing:.06em;border-right:2px solid var(--ember)}.feed-item b{color:var(--ember);margin-right:7px}
+    #buy-menu{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:#08121bd9;pointer-events:auto}
+    .buy-shell{width:min(720px,92vw);padding:26px 30px;background:var(--panel);border:1px solid #5b6b7680;box-shadow:0 24px 80px #0008}
+    .buy-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}.buy-head h1{font-size:21px;letter-spacing:.12em;margin:0}.buy-head p{font-size:10px;color:var(--muted);letter-spacing:.12em;margin:7px 0}.buy-balance{font:700 14px ui-monospace,monospace;color:var(--ember)}
+    #buy-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.buy-card{height:105px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:7px;padding:13px;border:1px solid #52636f;color:var(--white);background:#192731;text-align:left;cursor:pointer;transition:.15s}.buy-card:hover{border-color:var(--ember);background:#283039}.buy-card strong{font-size:14px}.buy-card small{color:var(--ember);font:11px ui-monospace,monospace}.buy-type{font-size:8px;letter-spacing:.18em;color:#8da0aa}
+    .buy-foot{display:flex;justify-content:space-between;align-items:center;margin-top:16px;color:#97a6ad;font-size:9px;letter-spacing:.12em}.buy-foot button,.restart{border:1px solid var(--ember);padding:9px 14px;background:#ff7a261b;color:var(--white);letter-spacing:.14em;font-size:10px;cursor:pointer}
+    .hidden{display:none!important}.visible{display:flex!important}
+    #round-overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#09131b44;z-index:4;pointer-events:none}.banner{min-width:min(440px,86vw);padding:30px 38px;text-align:center;background:#0d1922e8;border-top:2px solid var(--ember);box-shadow:0 12px 70px #0008}.banner-kicker{font-size:9px;letter-spacing:.28em;color:var(--ember)}.banner h2{margin:11px 0;font-size:30px;letter-spacing:.1em}.banner p{margin:0;color:#aab8bf;font-size:11px;letter-spacing:.1em}.banner .restart{pointer-events:auto;margin-top:19px}
+    #plant-prompt{position:absolute;bottom:145px;left:50%;transform:translateX(-50%);width:180px;text-align:center;opacity:0;transition:.2s}#plant-prompt.visible{opacity:1}#plant-prompt span{font-size:9px;letter-spacing:.15em}#plant-progress{height:3px;background:var(--ember);width:0;margin-top:6px}
+    #start-hint{position:absolute;bottom:13px;left:50%;transform:translateX(-50%);white-space:nowrap;color:#c5d0d5;font-size:9px;letter-spacing:.12em}
+    @media(max-width:600px){.topbar{padding:18px 4vw}.score{gap:7px;font-size:16px}.score small{display:none}.vitals{width:150px}.help{font-size:8px}.ammo{min-width:130px}.ammo-read{font-size:29px}#buy-grid{grid-template-columns:repeat(2,1fr)}.buy-card{height:85px}}
+  </style>
+  <script type="importmap">{"imports":{"three":"./vendor/three/three.module.min.js"}}</script>
+</head>
+<body>
+  <div class="hud">
+    <header class="topbar">
+      <div><div class="brand"><i>EMBER</i> YARD</div><div class="mapname">NORTHLINE FREIGHT TERMINAL</div></div>
+      <div class="score"><span class="ember">EMBER <b id="score-ember">0</b></span><small>—</small><span class="harbor">HARBOR <b id="score-harbor">0</b></span></div>
+      <div class="clock"><strong id="timer">1:40</strong><small id="timer-label">ROUND</small></div>
+    </header>
+    <div id="phase-label">PREPARE</div><div class="round">ROUND <span id="round-number">01 / 16</span></div>
+    <div class="alive"><span id="alive-ember">E 5</span><span id="alive-harbor">H 5</span></div>
+    <div id="crosshair"><i class="up"></i><i class="down"></i><i class="left"></i><i class="right"></i></div>
+    <div id="damage-indicator"></div><div id="killfeed"></div>
+    <div id="plant-prompt"><span>HOLD [E] — ARM EMBER CHARGE</span><div class="bar"><i id="plant-progress"></i></div></div>
+    <div class="bottom">
+      <div class="vitals">
+        <div class="vital-label"><span>VITALS</span><b><span id="health-value">100</span> HP</b></div><div class="bar"><i id="health-fill" style="width:100%"></i></div>
+        <div class="vital-label"><span>PLATE</span><b><span id="armor-value">50</span> AR</b></div><div class="bar armor"><i id="armor-fill" style="width:100%"></i></div>
+        <div class="help"><b>WASD</b> MOVE · <b>SPACE</b> JUMP · <b>CTRL</b> CROUCH<br><b>MOUSE</b> AIM / FIRE · <b>R</b> RELOAD · <b>B</b> BUY<br><b>E</b> ARM / <b>G</b> FRAG · <b>1–4</b> LOADOUT</div>
+      </div>
+      <div class="ammo"><div class="weapon-name" id="weapon-name">Kestrel</div><div class="ammo-read" id="ammo">12<small> / 48</small></div><div class="money" id="money">$800</div></div>
+    </div>
+    <div id="start-hint" class="hidden">BUY PHASE · SELECT A LOADOUT · CLICK THE YARD TO DEPLOY</div>
+  </div>
+  <section id="buy-menu" class="hidden">
+    <div class="buy-shell"><div class="buy-head"><div><h1>FIELD LOADOUT</h1><p>BUY WINDOW · <span id="buy-time">12s</span></p></div><div class="buy-balance" id="buy-balance">EMBER / $800</div></div>
+      <div id="buy-grid"></div><div class="buy-foot"><span>ONE PRIMARY · ONE THROWABLE · NO REFUNDS</span><button id="close-buy">DEPLOY →</button></div>
+    </div>
+  </section>
+  <section id="round-overlay"><div class="banner"><div class="banner-kicker" id="banner-kicker">ROUND COMPLETE</div><h2 id="banner-title">EMBER WIN</h2><p id="banner-result">Yard secured</p><button class="restart hidden" id="restart">RESTART MATCH</button></div></section>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
